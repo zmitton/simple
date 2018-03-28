@@ -1,0 +1,19 @@
+{
+  "name": "simplenode",
+  "version": "1.0.0",
+  "description": "simple vm with assembly register, compiler and high level language",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "simpletron",
+    "node",
+    "javascript"
+  ],
+  "author": "zac mitton",
+  "license": "ISC",
+  "dependencies": {
+    "readline-sync": "^1.4.9"
+  }
+}
