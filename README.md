@@ -1,4 +1,4 @@
-#terminal commands like this
+# terminal commands like this
 
 $`node index.js compile test/add.s`
 and
