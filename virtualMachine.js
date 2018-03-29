@@ -98,7 +98,6 @@ class VM{
         }
         break
       case MULTIPLY :
-      // console.log("MULTING ", this.accumulator, this.memory[this.operand])
         this.accumulator = this.memory[this.operand] * this.accumulator;
         this.instructionCounter++;
         break

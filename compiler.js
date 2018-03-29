@@ -147,7 +147,6 @@ class Compiler{
       case ">":
         this.addMemoryInstruction(LOAD, operandPtr2)
         this.addMemoryInstruction(SUBTRACT, operandPtr1)
-        console.log(operandPtr1, operandPtr2)
         this.flags[this.memIndexHead] = gotoLine
         this.addMemoryInstruction(BRANCHNEG, 0)
         break
