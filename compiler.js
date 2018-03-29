@@ -1,5 +1,3 @@
-const Expression = require('./expression')
-
 const READ       = 10
 const WRITE      = 11
 
@@ -17,16 +15,17 @@ const BRANCHNEG  = 41
 const BRANCHZERO = 42
 const HALT       = 43
 
+const MEMSIZE = 100
 
 class Compiler{
 
   constructor(simpleFile){
     this.simpleFile = simpleFile
     this.symbolTable = new SymbolTable()
-    this.memory = Array.from({length: 100}, (v, i) => 0)
-    this.flags = Array.from({length: 100}, (v, i) => -1)
+    this.memory = Array.from({length: MEMSIZE}, (v, i) => 0)
+    this.flags = Array.from({length: MEMSIZE}, (v, i) => -1)
     this.memIndexHead = 0
-    this.memIndexTail = 99
+    this.memIndexTail = MEMSIZE - 1
   }
 
   compile(){
@@ -37,6 +36,7 @@ class Compiler{
 
     this.firstPass()
     this.secondPass()
+
     return this.memory
   }
 
@@ -54,16 +54,6 @@ class Compiler{
     }
   }
 
-  addMemoryInstruction(instruction, operandIndex){
-    this.memory[this.memIndexHead] = (100 * instruction) + operandIndex
-    return this.memIndexHead++
-  }
-
-  addMemoryOperand(operand, memoryIndex){
-    this.memory[this.memIndexTail] = operand
-    return this.memIndexTail--
-  }
-
   proccessLine(line){
     let words, operandPtr, operandPtr2
     let operandType, postfixExpression, resultPtr
@@ -72,43 +62,34 @@ class Compiler{
     this.findOrInsert(parseInt(words[0]), "L")
 
     switch(words[1]){
-      case 'rem': // done
+      case 'rem':
         break
-      case 'input': // done
+      case 'input':
         operandPtr = this.findOrInsert(words[2])
         this.addMemoryInstruction(READ, operandPtr)
         break
-      case 'let': //done
+      case 'let':
         operandPtr = this.findOrInsert(words[2])
-        postfixExpression = this.toPostfixExpression(words.slice(3, words.length))
-        resultPtr = this.assembleExpression(postfixExpression)
+        resultPtr = this.assembleFromInfix(words.slice(3, words.length))
         this.addMemoryInstruction(LOAD, resultPtr)
         this.addMemoryInstruction(STORE, operandPtr)
         break
-      case 'print': // done
-        postfixExpression = this.toPostfixExpression(words.slice(2, words.length))
-        operandPtr = this.assembleExpression(postfixExpression)
-        this.addMemoryInstruction(WRITE, operandPtr)
+      case 'print':
+        resultPtr = this.assembleFromInfix(words.slice(2, words.length))
+        this.addMemoryInstruction(WRITE, resultPtr)
         break
-      case 'goto': // done unchecked | requires 2nd pass
+      case 'goto':
         this.flags[this.memIndexHead] = words[2]
         this.addMemoryInstruction(BRANCH, 0)
         break
-      case 'if'://done totally utterly unchecked | requires 2nd pass
-        //i.e. 01 if 5 + 7 == x + 2 goto 54
+      case 'if':
         let conditionalIndex = this.getConditionalIndex(words)
-
-        postfixExpression = this.toPostfixExpression(words.slice(2, conditionalIndex))
-        operandPtr = this.assembleExpression(postfixExpression)
-
-
-        postfixExpression = this.toPostfixExpression(words.slice(conditionalIndex + 1, words.length - 2))
-        // operandPtr2 = this.assembleExpression(postfixExpression)
-
+        resultPtr = this.assembleFromInfix(words.slice(2, conditionalIndex))
+        let result2Ptr = this.assembleFromInfix(words.slice(conditionalIndex + 1, words.length - 2))
         this.assembleConditional(
-          operandPtr, 
+          resultPtr, 
           words[conditionalIndex], 
-          this.assembleExpression(postfixExpression), 
+          result2Ptr, 
           parseInt(words[words.length - 1] )
         )
         break
@@ -119,6 +100,16 @@ class Compiler{
         console.log("ERROR: " + words[1] + " is not a command")
         break
     }
+  }
+
+  addMemoryInstruction(instruction, operandIndex){
+    this.memory[this.memIndexHead] = (100 * instruction) + operandIndex
+    return this.memIndexHead++
+  }
+
+  addMemoryOperand(operand, memoryIndex){
+    this.memory[this.memIndexTail] = operand
+    return this.memIndexTail--
   }
 
   getConditionalIndex(words){
@@ -178,13 +169,13 @@ class Compiler{
     }
   }
 
-  assembleExpression(expression){
+  assembleFromPostfix(expression){
     let stack = []
     let operandPtr1, operandPtr2, result, currentElement, resultPtr
 
     while(expression.length > 0){
       currentElement = expression.shift()
-      if(Expression.isOperand(currentElement)){
+      if(Compiler.isOperand(currentElement)){
         stack.push(parseInt(currentElement));
       }else{//isOperator
         operandPtr2 = stack.pop();
@@ -193,59 +184,31 @@ class Compiler{
         stack.push(resultPtr);
       }
     }
-  return stack.pop();
+    return stack.pop();
   }
 
   assemble(opLocation1, opLocation2, operator){
     let resultLocation = this.addMemoryOperand(0)
-    // console.log("ASDF ", opLocation1, opLocation2, operator)
+
+    this.addMemoryInstruction(LOAD, opLocation1)
     switch(operator){
       case "+":
-        this.addMemoryInstruction(LOAD, opLocation1)
         this.addMemoryInstruction(ADD, opLocation2)
-        this.addMemoryInstruction(STORE, resultLocation)
-        // return this.memory[opLocation1] + this.memory[opLocation2]
         break
       case "-":
-        this.addMemoryInstruction(LOAD, opLocation1)
         this.addMemoryInstruction(SUBTRACT, opLocation2)
-        this.addMemoryInstruction(STORE, resultLocation)
-        // return this.memory[opLocation1] - this.memory[opLocation2]
         break
       case "*":
-        this.addMemoryInstruction(LOAD, opLocation1)
         this.addMemoryInstruction(MULTIPLY, opLocation2)
-        this.addMemoryInstruction(STORE, resultLocation)
-        // return this.memory[opLocation1] * this.memory[opLocation2]
         break
       case "/":
-        this.addMemoryInstruction(LOAD, opLocation1)
         this.addMemoryInstruction(DIVIDE, opLocation2)
-        this.addMemoryInstruction(STORE, resultLocation)
-        // return this.memory[opLocation1] / this.memory[opLocation2]
-        break
-      case "^":
-        //sttub
-
-        let tempInstructionPtr = this.memIndexHead
-        this.addMemoryInstruction(LOAD, opLocation1) // base
-        this.addMemoryInstruction(STORE, resultLocation) // base -> result
-
-        this.addMemoryInstruction(MULTIPLY, opLocation2)
-        this.addMemoryInstruction(STORE, resultLocation)
-
-
-
-        this.addMemoryInstruction(LOAD, opLocation1)
-        this.addMemoryInstruction(LOAD, opLocation2)
-        this.addMemoryInstruction(POW, opLocation2)
-        this.addMemoryInstruction(STORE, resultLocation)
-        // let res = Math.pow(this.memory[opLocation1], this.memory[opLocation2])
-        // this.memory[resultLocation] = res
         break
       default:
         console.log("ERROR: ", operator, " is not an operator")
     }
+
+    this.addMemoryInstruction(STORE, resultLocation)
     return resultLocation
   }
 
@@ -270,38 +233,85 @@ class Compiler{
       return memoryLocation
     }
   }
+
   isNum(symbol){
     return parseInt(symbol) || symbol == 0
   }
 
-  toPostfixExpression(words){
+  assembleFromInfix(words){
     let memLocation = null
-    let infixItems = []
+    let infix = []
 
     for (var i = 0; i < words.length; i++) {
-      if(Expression.isOperand(words[i])){
+      if(Compiler.isOperand(words[i])){
         memLocation = this.findOrInsert(words[i])
-        infixItems.push(memLocation)
+        infix.push(memLocation)
       }else{
-        infixItems.push(words[i])
+        infix.push(words[i])
       }
     }
-    return Expression.infixToPostfix(infixItems)
+    let postfix = Compiler.infixToPostfix(infix)
+
+    return this.assembleFromPostfix(postfix)
+  }
+
+  static infixToPostfix(input){
+    let stack = []
+    let queue = []
+
+    input.forEach((currentValue)=>{
+      if(Compiler.isOperand(currentValue)){
+        queue.push(currentValue)
+      }else if(currentValue == '('){
+        stack.push(currentValue);
+      }else if(currentValue == ')'){
+        while(stack[stack.length-1] != '('){
+          queue.push(stack.pop());
+        }
+        stack.pop()
+      }else{
+        while(stack.length > 0 
+          && stack[stack.length-1] != '(' 
+          && this.getPrecedence(stack[stack.length-1]) >= this.getPrecedence(currentValue))
+        {
+          queue.push(stack.pop());
+        }
+        stack.push(currentValue);
+      }
+    })
+
+    while(stack.length > 0){ 
+      queue.push(stack.pop())
+    }
+    return queue;
   }
 
   static getOperandType(str){
-    if(!!parseInt(str)){
-      return "C"
-    }else{
-      return "V"
-    }
+    return !!parseInt(str) ? "C" : "V"
+  }
+
+  static isOperand(input){
+    return (input != '+') 
+      && (input != '-')
+      && (input != '*')
+      && (input != '/')
+      && (input != '^')
+      && (input != '(')
+      && (input != ')')
+  }
+  static getPrecedence(operator){
+    if(operator == '+'){ return 0 }
+    if(operator == '-'){ return 0 }
+    if(operator == '*'){ return 1 }
+    if(operator == '/'){ return 1 }
+    if(operator == '^'){ return 2 }
+
+    console.log("Error : '%c'\n", operator);
   }
 }
 
 class SymbolTable extends Array {
-  constructor() {
-    super()
-  }
+  constructor() { super() }
 
   findOrInsert(symbol, type, location){
     return this.find(symbol, type) || this.insert(symbol, type, location)
