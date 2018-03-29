@@ -3,7 +3,6 @@ const fs = require('fs');
 const Compiler = require('./compiler');
 const VM = require('./virtualMachine');
 
-
 let vm, sMLFile, simpleFile, sMLFilepath, simpleFilepath
 let command = process.argv[2]
 
@@ -15,8 +14,6 @@ switch(command){
     simpleFile = fs.readFileSync(simpleFilepath, 'utf8')
     vm = new VM(new Compiler(simpleFile).compile())
     fs.writeFileSync(sMLFilepath, vm.print())
-    // console.log(vm.memory)
-    console.log(vm.print())
   case "execute":
     sMLFile = fs.readFileSync(sMLFilepath, 'utf8')
     vm = VM.fromSMLFile(sMLFile)
@@ -26,8 +23,3 @@ switch(command){
     console.log("MAIN COMMAND INVALID")
     break
 }
-
-
-
-
-

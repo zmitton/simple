@@ -1,18 +1,14 @@
 const rls = require('readline-sync');
 
-
 const READ       = 10
 const WRITE      = 11
-
 const LOAD       = 20
 const STORE      = 21
-
 const ADD        = 30
 const SUBTRACT   = 31
 const DIVIDE     = 32
 const MULTIPLY   = 33
 const POW        = 34
-
 const BRANCH     = 40
 const BRANCHNEG  = 41
 const BRANCHZERO = 42
@@ -22,11 +18,10 @@ class VM{
   constructor(memory){
     this.memory = memory
     this.instructionCounter = 0
-    //need the below?
-    this.accumulator = null
-    this.instructionRegister = null
-    this.operationCode = null
-    this.operand = null
+    this.accumulator = 0
+    this.instructionRegister = 0
+    this.operationCode = 0
+    this.operand = 0
   }
 
   static getOperationCode(full){ return Math.floor(full / 100); }
@@ -86,17 +81,14 @@ class VM{
         this.instructionCounter++;
         break
       case ADD :
-      // console.log("ADDING ", this.accumulator, this.memory[this.operand])
         this.accumulator = this.accumulator + this.memory[this.operand];
         this.instructionCounter++;
         break
       case SUBTRACT :
-      // console.log("SUBBING ", this.accumulator, this.memory[this.operand])
         this.accumulator = this.accumulator - this.memory[this.operand];
         this.instructionCounter++;
         break
       case DIVIDE :
-      // console.log("DIVING ", this.accumulator, this.memory[this.operand])
         if(this.accumulator == 0 ){
           console.log("Terminated: Attempt to divide by zero");
           this.instructionCounter = 100;
@@ -104,11 +96,6 @@ class VM{
           this.accumulator = this.accumulator / this.memory[this.operand];
           this.instructionCounter++;
         }
-        break
-      case POW : //remove
-      console.log("POWING ", this.accumulator, this.memory[this.operand])
-        this.accumulator = Math.pow(this.accumulator, this.memory[this.operand])
-        this.instructionCounter++;
         break
       case MULTIPLY :
       // console.log("MULTING ", this.accumulator, this.memory[this.operand])
@@ -145,5 +132,3 @@ class VM{
 }
 
 module.exports = VM
-
-

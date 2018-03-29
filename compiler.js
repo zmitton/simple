@@ -1,15 +1,11 @@
 const READ       = 10
 const WRITE      = 11
-
 const LOAD       = 20
 const STORE      = 21
-
 const ADD        = 30
 const SUBTRACT   = 31
 const DIVIDE     = 32
 const MULTIPLY   = 33
-const POW        = 34 //remove
-
 const BRANCH     = 40
 const BRANCHNEG  = 41
 const BRANCHZERO = 42
@@ -344,6 +340,5 @@ class TableEntry{
     this.location = location
   }
 }
-
 
 module.exports = Compiler
